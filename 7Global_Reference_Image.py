@@ -129,3 +129,26 @@ align_images(refined_avg_path2, aligned_images_dir1, aligned_images_dir2)
 
 # Step 6: Compute refined average image from first set of aligned images
 compute_refined_average_image(aligned_images_dir2, refined_avg_path3)
+
+# Step 7: Binarize the last saved refined average image
+if os.path.exists(refined_avg_path3):
+    final_image = cv2.imread(refined_avg_path3, cv2.IMREAD_GRAYSCALE)
+
+    if final_image is None:
+        raise FileNotFoundError(f"Could not load refined average image: {refined_avg_path3}")
+
+    # Extract non-zero pixels for dynamic thresholding
+    non_zero_pixels = final_image[final_image > 0]
+    if len(non_zero_pixels) == 0:
+        raise ValueError("No non-zero pixels found in the final refined image.")
+
+    dynamic_thresh = int(np.mean(non_zero_pixels))
+    print("dynamic_thresh: ", dynamic_thresh)
+    threshold_value = min(dynamic_thresh * 1.25, 255)
+    print("threshold_value: ", threshold_value)
+
+    _, binary_image = cv2.threshold(final_image, threshold_value, 255, cv2.THRESH_BINARY)
+
+    binary_output_path = refined_avg_path3.replace(".png", "_binary.png")
+    cv2.imwrite(binary_output_path, binary_image)
+    print(f"Binarized refined average image saved: {binary_output_path} (threshold={threshold_value})")
